@@ -3,7 +3,7 @@
 
 /** Initialize headers */
 const STATUS_PROJECT = "DEVELOPMENT"; //Two Value : DEVELOPMENT ,PRODUCT
-const AUTHORIZED_URL_DEVELOPMENT = ["http://localhost:5173", "http://localhost:5174", "http://192.168.1.111:5173", "http://localhost:3000","http://192.168.1.180:3000"];
+const AUTHORIZED_URL_DEVELOPMENT = ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"];
 const AUTHORIZED_URL_PRODUCT = ["", ""];
 const ORIGINAL_DOMAIN = "example.com";
 
