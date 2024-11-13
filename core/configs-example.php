@@ -58,7 +58,7 @@ const DEFAULT_USERNAME = "admin";
 const DEFAULT_PASSWORD = "Aa@12345";
 
 /** Log User: */
-const GET_LOGS_META = true;
+const GET_LOGS_META = false;
 
 /** Token : */
 const TOKEN_NAME = "access_token";

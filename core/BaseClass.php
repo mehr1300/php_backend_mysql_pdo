@@ -69,42 +69,6 @@ class Base
         }
         return $result;
     }
-    public static function PreventDefault($input): array|string
-    {
-        $value = str_replace("= ?", "", $input);
-        $value = preg_replace("/\x{200c}/u", ' ', $value);
-        $value = preg_replace("/\x{200F}/u", '', $value);
-        $value = str_replace(">", "", $value);
-        $value = str_replace("script>", "", $value);
-        $value = str_replace("<script", "", $value);
-        return str_replace("<", "", $value);
-    }
-    public static function ClearChar($value): string
-    {
-        $value = str_replace(['"', '""', "''", "'",'/'], '', $value);
-        $value = preg_replace("/\x{200c}/u", ' ', $value);
-        $value = preg_replace("/\x{200F}/u", '', $value);
-        return preg_replace('/\s+/', ' ', $value);
-    }
-    public static function ClearAllSpecialChar($value): string
-    {
-        $value = str_replace(['>',',',",,","'","''",'"', '""', "''", '.', ':', '_', ']','/', '[', '|', '{', '}', '>', '<', "\u200C"], "", $value);
-        $value = str_replace(["  ","   ","    ","     ","      ","       "], " ", $value);
-        return preg_replace('/\s+/', ' ', $value);
-    }
-    private static function BasePreventPassword($value): string
-    {
-        $value = trim($value);
-        $value = TextHelper::textArToFa($value);
-        $value = TextHelper::numFaToEn($value);
-        $value = self::PreventDefault($value);
-        $value = preg_replace('/[^a-zA-Z0-9@#$!]/', '', $value);
-        if (function_exists("addslashes")) {
-            $value = addslashes($value);
-        }
-        $value = htmlspecialchars($value);
-        return htmlentities($value);
-    }
     public static function ChangeSpaceWithChar($value,$char = "-"): string
     {
         $value = Sanitizer::Char($value);
@@ -196,6 +160,29 @@ class Base
 
 class Sanitizer
 {
+    private static function PreventDefault($input): array|string
+    {
+        $value = str_replace("= ?", "", $input);
+        $value = preg_replace("/\x{200c}/u", ' ', $value);
+        $value = preg_replace("/\x{200F}/u", '', $value);
+        $value = str_replace(">", "", $value);
+        $value = str_replace("script>", "", $value);
+        $value = str_replace("<script", "", $value);
+        return str_replace("<", "", $value);
+    }
+    private static function ClearChar($value): string
+    {
+        $value = str_replace(['"', '""', "''", "'",'/'], '', $value);
+        $value = preg_replace("/\x{200c}/u", ' ', $value);
+        $value = preg_replace("/\x{200F}/u", '', $value);
+        return preg_replace('/\s+/', ' ', $value);
+    }
+    private static function ClearAllSpecialChar($value): string
+    {
+        $value = str_replace(['>',',',",,","'","''",'"', '""', "''", '.', ':', '_', ']','/', '[', '|', '{', '}', '>', '<', "\u200C"], "", $value);
+        $value = str_replace(["  ","   ","    ","     ","      ","       "], " ", $value);
+        return preg_replace('/\s+/', ' ', $value);
+    }
     public static function Number($num): ?int
     {
         return (int)$num;
@@ -206,8 +193,8 @@ class Sanitizer
         $value = strtolower($value);
         $value = TextHelper::textArToFa($value);
         $value = TextHelper::numFaToEn($value);
-        $value = Base::PreventDefault($value);
-        $value = Base::ClearChar($value);
+        $value = self::PreventDefault($value);
+        $value = self::ClearChar($value);
         if (function_exists("addslashes")) {
             $value = addslashes($value);
         }
@@ -220,8 +207,8 @@ class Sanitizer
         $value = $value." ".$string ;
         $value = TextHelper::textArToFa($value);
         $value = TextHelper::numFaToEn($value);
-        $value = Base::PreventDefault($value);
-        $value = Base::ClearAllSpecialChar($value);
+        $value = self::PreventDefault($value);
+        $value = self::ClearAllSpecialChar($value);
         $value = preg_replace('/\s+/', "-", $value);
         if (function_exists("addslashes")) {
             $value = addslashes($value);
@@ -236,8 +223,8 @@ class Sanitizer
         $value = $value." ".$string ;
         $value = TextHelper::textArToFa($value);
         $value = TextHelper::numFaToEn($value);
-        $value = Base::PreventDefault($value);
-        $value = Base::ClearAllSpecialChar($value);
+        $value = self::PreventDefault($value);
+        $value = self::ClearAllSpecialChar($value);
         $value = preg_replace('/\s+/', "-", $value);
         if (function_exists("addslashes")) {
             $value = addslashes($value);
@@ -774,9 +761,4 @@ class Upload{
 
 }
 
-
-
-class Custom extends Base{
-
-}
-
+ 
