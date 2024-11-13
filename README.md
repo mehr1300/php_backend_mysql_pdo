@@ -30,7 +30,6 @@
         ```php
         <?php
         const SERVERNAME_DB = "localhost";
-        const SERVERNAME_DB = "localhost";
         const USERNAME_DB = "Database_username";
         const PASSWORD_DB = "Database_password";
         const DATABASE_DB = "Database_database";
