@@ -135,11 +135,25 @@ $userId = Sanitizer::Number($_GET['id']);
 // استفاده از متد Char برای تمیز کردن ورودی رشته‌ای
 $username = Sanitizer::Char($_POST['username']);
 
-// استفاده از متد Url برای ساخت URL امن
-$slug = Sanitizer::Url($_POST['title']);
+// استفاده از متد Url برای ساخت URL امن و استاندارد
+$url = Sanitizer::Url($_POST['title']);
+//input => this is a url for my post
+// output => this_is_a_url_for_my_post
 
-// استفاده از متد ImageName برای ایجاد نام فایل تصویر امن
+// استفاده از متد Url برای ساخت URL امن و استاندارد به همراه افرودن رشته به انتها
+$url2 = Sanitizer::Url($_POST['title'],"special_string");
+//input => this is a url for my post
+// output => this_is_a_url_for_my_post_special_string
+
+// استفاده از متد ImageName برای ایجاد نام فایل تصویر امن و استاندارد
 $imageName = Sanitizer::ImageName($_FILES['image']['name']);
+//input => this is a image name
+// output => this_is_a_image_name
+
+// استفاده از متد ImageName برای ایجاد نام فایل تصویر امن و استاندارد به همراه اقزودن رشته به انتها
+$imageName = Sanitizer::ImageName($_FILES['image']['name'],"special_string");
+//input => this is a image name
+// output => this_is_a_image_name_special_string
 
 // استفاده از متد TextArea برای تمیز کردن محتوای متن چندخطی
 $comment = Sanitizer::TextArea($_POST['comment']);
@@ -152,8 +166,8 @@ $content = Sanitizer::TextEditor($_POST['content']);
 
 - **Sanitizer::Number($num):** ورودی را به عدد صحیح تبدیل می‌کند.
 - **Sanitizer::Char($value):** ورودی رشته‌ای را تمیز کرده و از کاراکترهای مخرب پاک می‌کند.
-- **Sanitizer::Url($value, $string):** یک رشته ورودی را به یک URL امن تبدیل می‌کند.
-- **Sanitizer::ImageName($value, $string):** نام تصویر را تمیز کرده و نامی امن برای ذخیره‌سازی ایجاد می‌کند.
+- **Sanitizer::Url($value, $string):** ورودی را پاک میکند و مناسب سازی برای استفاده به عنوان آدرس.
+- **Sanitizer::ImageName($value, $string):** ورودی را پاک میکند و مناسب سازی برای استفاده به عنوان اسم تصاویر.
 - **Sanitizer::TextArea($value):** محتوای وارد شده در تکست اریا را تمیز می‌کند.
 - **Sanitizer::TextEditor($value):** محتوای وارد شده از طریق ویرایشگر متن را تمیز می‌کند.
 

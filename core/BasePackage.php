@@ -217,11 +217,11 @@ class Sanitizer
     {
         $value = trim($value);
         $value = strtolower($value);
+        $value = $value." ".$string ;
         $value = TextHelper::textArToFa($value);
         $value = TextHelper::numFaToEn($value);
         $value = Base::PreventDefault($value);
         $value = Base::ClearAllSpecialChar($value);
-        $value = $value . $string;
         $value = preg_replace('/\s+/', "-", $value);
         if (function_exists("addslashes")) {
             $value = addslashes($value);
@@ -233,11 +233,11 @@ class Sanitizer
     {
         $value = trim($value);
         $value = strtolower($value);
+        $value = $value." ".$string ;
         $value = TextHelper::textArToFa($value);
         $value = TextHelper::numFaToEn($value);
         $value = Base::PreventDefault($value);
         $value = Base::ClearAllSpecialChar($value);
-        $value = $value . $string;
         $value = preg_replace('/\s+/', "-", $value);
         if (function_exists("addslashes")) {
             $value = addslashes($value);
