@@ -7,5 +7,6 @@ require_once "Crypto.php";
 require_once "BaseClass.php";
 require_once 'Router.php';
 require_once 'Auth.php';
+require_once "logs.php";
 
 

@@ -6,7 +6,6 @@ if (file_exists("../core/init.php")) {
 }
 require_once 'CustomClass.php';
 require_once 'Middleware.php';
-require_once "logs.php";
 
 require_once "controllers/indexController.php";
 require_once "controllers/userController.php";
