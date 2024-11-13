@@ -59,19 +59,17 @@ class Base
                 "phone" => Validate::Phone($BaseArray[$key]),
                 "email" => Validate::Email($BaseArray[$key]),
                 "code" => Code::Validate($BaseArray[$key]),
-                "int" => self::PreventNumber($BaseArray[$key]),
-                "string" => self::PreventChar($BaseArray[$key]),
-                "text" => self::PreventTextArea($BaseArray[$key]),
+                "int" => Sanitizer::Number($BaseArray[$key]),
+                "string" => Sanitizer::Char($BaseArray[$key]),
+                "textarea" => Sanitizer::TextArea($BaseArray[$key]),
+                "text_editor" => Sanitizer::TextEditor($BaseArray[$key]),
                 "" => $BaseArray[$key],
             };
             $result = [...$result,$item];
         }
         return $result;
     }
-    public static function Empty($key) {
-        return isset($_POST[$key]) && !empty($_POST[$key]);
-    }
-    private static function PreventDefault($input): array|string
+    public static function PreventDefault($input): array|string
     {
         $value = str_replace("= ?", "", $input);
         $value = preg_replace("/\x{200c}/u", ' ', $value);
@@ -81,80 +79,18 @@ class Base
         $value = str_replace("<script", "", $value);
         return str_replace("<", "", $value);
     }
-    private static function ClearChar($value): string
+    public static function ClearChar($value): string
     {
         $value = str_replace(['"', '""', "''", "'",'/'], '', $value);
         $value = preg_replace("/\x{200c}/u", ' ', $value);
         $value = preg_replace("/\x{200F}/u", '', $value);
         return preg_replace('/\s+/', ' ', $value);
     }
-    private static function ClearAllSpecialChar($value): string
+    public static function ClearAllSpecialChar($value): string
     {
         $value = str_replace(['>',',',",,","'","''",'"', '""', "''", '.', ':', '_', ']','/', '[', '|', '{', '}', '>', '<', "\u200C"], "", $value);
         $value = str_replace(["  ","   ","    ","     ","      ","       "], " ", $value);
         return preg_replace('/\s+/', ' ', $value);
-    }
-    public static function PreventNumber($num): ?int
-    {
-//        if(!isset($num)) return null;
-        return (int)$num;
-    }
-    public static function PreventChar($value): ?string
-    {
-        $value = trim($value);
-        $value = strtolower($value);
-        $value = TextHelper::textArToFa($value);
-        $value = TextHelper::numFaToEn($value);
-        $value = self::PreventDefault($value);
-        $value = self::ClearChar($value);
-        if (function_exists("addslashes")) {
-            $value = addslashes($value);
-        }
-        $value = htmlspecialchars($value);
-        return htmlentities($value);
-
-    }
-    public static function PreventUrl($value, $string = ""): string
-    {
-        $value = $value . $string;
-        $value = trim($value);
-        $value = strtolower($value);
-        $value = TextHelper::textArToFa($value);
-        $value = TextHelper::numFaToEn($value);
-        $value = self::PreventDefault($value);
-        $value = self::ClearAllSpecialChar($value);
-        $value = preg_replace('/\s+/', "-", $value);
-        if (function_exists("addslashes")) {
-            $value = addslashes($value);
-        }
-        $value = htmlspecialchars($value);
-        return htmlentities($value);
-    }
-    public static function PreventImageName($value, $string = ""): string
-    {
-        $value = $value . $string;
-        $value = trim($value);
-        $value = strtolower($value);
-        $value = TextHelper::textArToFa($value);
-        $value = TextHelper::numFaToEn($value);
-        $value = self::PreventDefault($value);
-        $value = self::ClearAllSpecialChar($value);
-        $value = preg_replace('/\s+/', "-", $value);
-        if (function_exists("addslashes")) {
-            $value = addslashes($value);
-        }
-        $value = htmlspecialchars($value);
-        return htmlentities($value);
-    }
-    public static function PreventTextArea($value): ?string
-    {
-        $value = trim($value);
-        $value = strtolower($value);
-        $value = TextHelper::textArToFa($value);
-        $value = TextHelper::numFaToEn($value);
-        $value = str_replace("= ?", "", $value);
-        $value = str_replace("script>", "", $value);
-        return str_replace("<script", "", $value);
     }
     private static function BasePreventPassword($value): string
     {
@@ -171,22 +107,22 @@ class Base
     }
     public static function ChangeSpaceWithChar($value,$char = "-"): string
     {
-        $value = self::PreventChar($value);
+        $value = Sanitizer::Char($value);
         $value = preg_replace('/\s+/', $char, $value);
         $value = htmlspecialchars($value);
         return htmlentities($value);
     }
     public static function ValidateNumberLessZero($num,$message = "خطا در عملیات"): ?int {
-        if (self::PreventNumber($num) > 0) {
+        if (Sanitizer::Number($num) > 0) {
             self::ReturnError($message);
         }
-        return self::PreventNumber($num);
+        return Sanitizer::Number($num);
     }
     public static function ValidateNumberGreaterZero($num,$message = "خطا در عملیات"): ?int {
-        if (self::PreventNumber($num) < 1) {
+        if (Sanitizer::Number($num) < 1) {
             self::ReturnError($message);
         }
-        return self::PreventNumber($num);
+        return Sanitizer::Number($num);
     }
     public static function SendSMS($data = null)
     {
@@ -231,7 +167,7 @@ class Base
     }
     public static function CreatePagingNumber($row_per_page,$page_number): array {
         $limit = self::ValidateNumberGreaterZero($row_per_page);
-        $offset = (self::PreventNumber($page_number) - 1) * $limit;
+        $offset = (Sanitizer::Number($page_number) - 1) * $limit;
         return [$limit,$offset];
     }
     public static function ValNotExistInDbReturn($table_name,$condition,array $params,$message = "این رکورد تکراری است و قبلا استفاده شده است.")
@@ -255,6 +191,84 @@ class Base
             }
         }
         return true;
+    }
+}
+
+class Sanitizer
+{
+    public static function Number($num): ?int
+    {
+        return (int)$num;
+    }
+    public static function Char($value): ?string
+    {
+        $value = trim($value);
+        $value = strtolower($value);
+        $value = TextHelper::textArToFa($value);
+        $value = TextHelper::numFaToEn($value);
+        $value = Base::PreventDefault($value);
+        $value = Base::ClearChar($value);
+        if (function_exists("addslashes")) {
+            $value = addslashes($value);
+        }
+        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8', false);
+    }
+    public static function Url($value, $string = ""): string
+    {
+        $value = trim($value);
+        $value = strtolower($value);
+        $value = TextHelper::textArToFa($value);
+        $value = TextHelper::numFaToEn($value);
+        $value = Base::PreventDefault($value);
+        $value = Base::ClearAllSpecialChar($value);
+        $value = $value . $string;
+        $value = preg_replace('/\s+/', "-", $value);
+        if (function_exists("addslashes")) {
+            $value = addslashes($value);
+        }
+        $value = htmlspecialchars($value);
+        return htmlentities($value);
+    }
+    public static function ImageName($value, $string = ""): string
+    {
+        $value = trim($value);
+        $value = strtolower($value);
+        $value = TextHelper::textArToFa($value);
+        $value = TextHelper::numFaToEn($value);
+        $value = Base::PreventDefault($value);
+        $value = Base::ClearAllSpecialChar($value);
+        $value = $value . $string;
+        $value = preg_replace('/\s+/', "-", $value);
+        if (function_exists("addslashes")) {
+            $value = addslashes($value);
+        }
+        $value = htmlspecialchars($value);
+        return htmlentities($value);
+    }
+    public static function TextArea($value): ?string
+    {
+        $value = trim($value);
+        $value = TextHelper::textArToFa($value);
+        $value = TextHelper::numFaToEn($value);
+        $value = str_replace("= ?", "", $value);
+        $value = str_replace("script>", "", $value);
+        $value = str_replace("<script", "", $value);
+        $value = str_replace("<", "", $value);
+        $value = str_replace(">", "", $value);
+        if (function_exists("addslashes")) {
+            $value = addslashes($value);
+        }
+        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8', false);
+    }
+    public static function TextEditor($value): ?string
+    {
+        $value = trim($value);
+        $value = strtolower($value);
+        $value = TextHelper::textArToFa($value);
+        $value = TextHelper::numFaToEn($value);
+        $value = str_replace("= ?", "", $value);
+        $value = str_replace("script>", "", $value);
+        return str_replace("<script", "", $value);
     }
 }
 
@@ -478,7 +492,7 @@ class PD {
 class Validate{
     public static function Username($username): ?string
     {
-        $username = Base::PreventChar($username);
+        $username = Sanitizer::Char($username);
         if (!preg_match('/^[A-Za-z0-9_]{' . USERNAME_LENGTH . ',}$/', $username)) {
             Base::ReturnError("نام کاربری باید شامل حروف و اعداد انگلیسی باشد و حداقل ".USERNAME_LENGTH." کاراکتر داشته باشد.");
         }
@@ -499,7 +513,7 @@ class Validate{
     }
     public static function Email($email): ?string
     {
-        $email = Base::PreventChar($email);
+        $email = Sanitizer::Char($email);
         $email = filter_var($email, FILTER_SANITIZE_EMAIL);
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             Base::ReturnError("فرمت ایمیل نامعتبر است");
@@ -518,7 +532,7 @@ class Validate{
     }
     public static function Mobile($mobile): null|string
     {
-        $mobile = Base::PreventChar($mobile);
+        $mobile = Sanitizer::Char($mobile);
         $mobile = preg_replace('/[^0-9]/', '', $mobile);
         if (!preg_match('/^09[0-9]{9}$/', $mobile)) {
             Base::ReturnError("ساختار وارد شده برای شماره موبایل صحیح نیست. شماره موبایل باید با 09 شروع شود و 11 رقم داشته باشد.");
@@ -527,7 +541,7 @@ class Validate{
     }
     public static function Phone($phone): null|string
     {
-        $phone = Base::PreventChar($phone);
+        $phone = Sanitizer::Char($phone);
         if (!preg_match('/^0\d{10}$/', $phone)) {
             Base::ReturnError("ساختار وارد شده برای شماره تلفن صحیح نیست. شماره تلفن باید با کد شهر شروع شود و 11 رقم داشته باشد.");
         }
@@ -539,7 +553,7 @@ class Validate{
     }
     public static function NationalCode($code)
     {
-        $code = Base::PreventChar($code);
+        $code = Sanitizer::Char($code);
         if (!preg_match('/^[0-9]{10}$/', $code)) {
             Base::ReturnError("کد ملی وارد شده صحیح نیست");
         }
