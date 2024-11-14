@@ -40,7 +40,19 @@
 
 ## استفاده
 
-### مثال‌ها
+### کلاس `PD`
+
+```php
+<?php
+class PD {
+    public static function Insert($Table_Name, $Insert_Data): bool|string {//...//}
+    public static function Update(string $Table_Name, array $data, string $Condition, array $params): bool|int {//...//}
+    public static function Delete(string $Table_Name, string $Condition, array $params): bool {//...//}
+    public static function SingleSelect(string $Table_Name, string $Condition,array $params, $What_Row = 'count(*)' ) {//...//}
+    public static function RowSelect(string $Table_Name,string $Condition,array $params, $What_Row = "*") {//...//}
+    public static function MultiSelect(string $Table_Name,string $Condition,array $params, $What_Row = "*"): bool|array  {//...//}
+}
+```
 
 #### مثال استفاده از کلاس `PD`
 
@@ -108,6 +120,17 @@ $firstname = PD::SingleSelect("tbl_user", "WHERE id = ?", [1], "firstname");
 | John |
 
 
+#### توضیحات
+
+- **PD::Insert($Table_Name, $Insert_Data):** افزودن مقدار جدید به جدول
+- **PD::Update(string $Table_Name, array $data, string $Condition, array $params):** بروز رسانی جدول
+- **PD::Delete(string $Table_Name, string $Condition, array $params):** حذف اطلاعت از جدول
+- **PD::SingleSelect(string $Table_Name, string $Condition,array $params, $What_Row = 'count(*)' ):** دریافت مستقیم یک مقدار از جدول
+- **PD::RowSelect(string $Table_Name,string $Condition,array $params, $What_Row = "*"):** دریافت یک سطر از جدول
+- **PD::MultiSelect(string $Table_Name,string $Condition,array $params, $What_Row = "*"):** دریافت تمام اطلاعات یک جدول
+
+
+============================
 #### کلاس `Sanitizer`
 
 کلاس `Sanitizer` برای تمیز کردن و اعتبارسنجی ورودی‌های کاربر استفاده می‌شود تا از ورود داده‌های مخرب جلوگیری کند.
