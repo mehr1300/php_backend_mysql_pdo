@@ -83,6 +83,18 @@ This project is a full-featured backend built with PHP, utilizing a MySQL databa
 
    These configurations are essential for enabling URL routing in your application. They redirect all incoming requests that do not match an existing file or directory to `interfaces/site/index.php`, allowing centralized route management.
 
+6. **Assets Folder:**
+
+   A folder named `assets` is present in the root directory of the project. This folder contains the following files that you can use if needed:
+
+   - `tbl_logs.sql`
+   - `tbl_properties.sql`
+   - `tbl_user_meta_data.sql`
+   - `web.config`
+   - `.htaccess`
+
+   You can execute the SQL scripts to create the necessary tables in your database and use the configuration files for server setup as required.
+
 ## Database Tables
 
 This project requires the creation of three tables in your MySQL database to function correctly. Execute the following SQL statements to create them:
@@ -152,9 +164,9 @@ class PD {
     public static function Insert($Table_Name, $Insert_Data): bool|string {//...//}
     public static function Update(string $Table_Name, array $data, string $Condition, array $params): bool|int {//...//}
     public static function Delete(string $Table_Name, string $Condition, array $params): bool {//...//}
-    public static function SingleSelect(string $Table_Name, string $Condition,array $params, $What_Row = 'count(*)') {//...//}
-    public static function RowSelect(string $Table_Name,string $Condition,array $params, $What_Row = "*") {//...//}
-    public static function MultiSelect(string $Table_Name,string $Condition,array $params, $What_Row = "*"): bool|array  {//...//}
+    public static function SingleSelect(string $Table_Name, string $Condition, array $params, $What_Row = 'count(*)') {//...//}
+    public static function RowSelect(string $Table_Name, string $Condition, array $params, $What_Row = "*") {//...//}
+    public static function MultiSelect(string $Table_Name, string $Condition, array $params, $What_Row = "*"): bool|array  {//...//}
 }
 ```
 
@@ -398,6 +410,18 @@ If you have any questions or issues, please open an issue on the project's GitHu
 
    این پیکربندی‌ها برای فعال‌سازی روتینگ URL در برنامه شما ضروری هستند. آن‌ها تمام درخواست‌های ورودی که با فایل یا پوشه‌ای موجود مطابقت ندارند را به `interfaces/site/index.php` هدایت می‌کنند، که به شما امکان مدیریت مرکزی مسیرها را می‌دهد.
 
+6. **پوشه Assets:**
+
+   یک پوشه به نام `assets` در پوشه اصلی پروژه وجود دارد. این پوشه شامل فایل‌های زیر است که در صورت نیاز می‌توانید از آن‌ها استفاده کنید:
+
+   - `tbl_logs.sql`
+   - `tbl_properties.sql`
+   - `tbl_user_meta_data.sql`
+   - `web.config`
+   - `.htaccess`
+
+   شما می‌توانید اسکریپت‌های SQL را برای ایجاد جداول مورد نیاز در پایگاه داده خود اجرا کرده و از فایل‌های پیکربندی سرور برای تنظیمات مورد نیاز استفاده کنید.
+
 ## جداول پایگاه داده
 
 این پروژه برای عملکرد صحیح نیاز به ایجاد سه جدول در پایگاه داده MySQL شما دارد. برای ایجاد آن‌ها، دستورات SQL زیر را اجرا کنید:
@@ -453,7 +477,7 @@ If you have any questions or issues, please open an issue on the project's GitHu
 
 **نکات مهم:**
 
-- **اجرای کدها:** برای ایجاد این جداول، دستورات SQL فوق را در ابزار مدیریت پایگاه داده خود (مثل phpMyAdmin) اجرا کنید.
+- **اجرای اسکریپت‌ها:** دستورات SQL فوق را در ابزار مدیریت پایگاه داده خود (مثل phpMyAdmin) اجرا کنید تا جداول مورد نیاز ایجاد شوند.
 - **تطابق نام‌ها:** اطمینان حاصل کنید که نام جداول (`tbl_logs`, `tbl_properties`, `tbl_user_meta_data`) با نام‌هایی که در پروژه استفاده می‌شوند، مطابقت داشته باشند تا از بروز هرگونه مشکل جلوگیری شود.
 - **اهمیت جداول:** این جداول برای عملکرد صحیح فریم‌ورک ضروری هستند و اطلاعات حیاتی مانند لاگ‌ها، تنظیمات و متادیتا را ذخیره می‌کنند.
 
@@ -557,9 +581,9 @@ $firstname = PD::SingleSelect("tbl_user", "WHERE id = ?", [1], "firstname");
 <?php
 class Sanitizer
 {
-    public static function Number($num): ?int {//...//}
-    public static function Char($value): ?string {//...//}
-    public static function Url($value, $string = ""): string {//...//}
+    public static function Number($num): ?int   {//...//}
+    public static function Char($value): ?string  {//...//}
+    public static function Url($value, $string = ""): string{//...//}
     public static function ImageName($value, $string = ""): string {//...//}
     public static function TextArea($value): ?string {//...//}
     public static function TextEditor($value): ?string {//...//}
