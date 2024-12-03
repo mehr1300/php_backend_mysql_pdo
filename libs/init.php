@@ -4,8 +4,8 @@ if (file_exists("../core/init.php")) {
 } elseif (file_exists("../../core/init.php")) {
     require_once "../../core/init.php";
 }
-require_once 'CustomClass.php';
-require_once 'Middleware.php';
+require_once 'customClass.php';
+require_once 'middleware.php';
 
 require_once "controllers/indexController.php";
 require_once "controllers/userController.php";

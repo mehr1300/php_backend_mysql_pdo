@@ -3,10 +3,10 @@ require_once "jdf.php";
 require_once "configs.php";
 require_once "header.php";
 require_once "db.php";
-require_once "Crypto.php";
-require_once "BaseClass.php";
-require_once 'Router.php';
-require_once 'Auth.php';
+require_once "crypto.php";
+require_once "baseClass.php";
+require_once 'router.php';
+require_once 'auth.php';
 require_once "logs.php";
 
 

@@ -11,7 +11,7 @@ class AdminController {
             "username" => $username,
             "role" => "admin",
         ];
-        $token = Auth::GenerateToken($data);
+        $token = auth::GenerateToken($data);
         Base::SendToken($token);
 
         return json_encode([

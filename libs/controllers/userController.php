@@ -14,7 +14,7 @@ class UserController {
             "username" => $username,
             "role" => "user",
         ];
-        $token = Auth::GenerateToken($data);
+        $token = auth::GenerateToken($data);
         Base::SendToken($token);
 
         return json_encode([

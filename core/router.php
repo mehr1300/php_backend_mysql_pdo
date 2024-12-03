@@ -1,5 +1,5 @@
 <?php
-class Router
+class router
 {
     private static array $routes = [];
 

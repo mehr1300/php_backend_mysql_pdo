@@ -2,7 +2,7 @@
 
 use JetBrains\PhpStorm\NoReturn;
 
-class Auth
+class auth
 {
     public static function CheckAuth(string $requiredRole = null): bool
     {
@@ -34,7 +34,7 @@ class Auth
     private static function ParseToken(string $token): array|false
     {
         try {
-            $raw_token = Crypto::decryptThis($token);
+            $raw_token = crypto::decryptThis($token);
             $raw_token = explode("Ⓔ", $raw_token)[0];
             if (!$raw_token) return false;
             $contents = [];
@@ -65,7 +65,7 @@ class Auth
         foreach ($token_variables as $content_key => $content_value) {
             $content_string = $content_string . $content_key . "Ⓑ" . $content_value . "Ⓐ";
         }
-        return Crypto::encryptThis($content_string . "Ⓔ" . time());
+        return crypto::encryptThis($content_string . "Ⓔ" . time());
     }
 
 }

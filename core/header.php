@@ -8,7 +8,7 @@ error_reporting(E_ALL);
 
 /** Initialize headers */
 date_default_timezone_set('Asia/Tehran');
-header("Content-Type:  multipart/form-data");
+header("Content-Type: x-www-form-urlencoded");
 if(isset($_SERVER['HTTP_ORIGIN'])){
     $http_origin = $_SERVER['HTTP_ORIGIN'];
     if(STATUS_PROJECT === "PRODUCT"){

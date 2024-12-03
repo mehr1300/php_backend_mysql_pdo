@@ -1,7 +1,7 @@
 <?php
 
 
-class Crypto
+class crypto
 {
     private const ITERATION_COUNT = 1000;
     private const KEY_LENGTH = 256;
