@@ -52,6 +52,7 @@ class Base
 //                self::ReturnError("مقادیر مورد نیاز ارسال نشد است.");
 //            }
             $item = match ($value){
+                "uuid" => Validate::UUID($BaseArray[$key]),
                 "username" => Validate::Username($BaseArray[$key]),
                 "password" => Validate::Password($BaseArray[$key]),
                 "national_code" => Validate::NationalCode($BaseArray[$key]),
@@ -477,6 +478,13 @@ class PD {
 }
 
 class Validate{
+    public static function UUID($uuid): ?string
+    {
+        if (!preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i', $uuid)) {
+            Base::ReturnError("UUID وارد شده معتبر نیست.");
+        }
+        return $uuid;
+    }
     public static function Username($username): ?string
     {
         $username = Sanitizer::Char($username);
@@ -761,4 +769,4 @@ class Upload{
 
 }
 
- 
+

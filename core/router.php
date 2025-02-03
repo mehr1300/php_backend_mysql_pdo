@@ -14,7 +14,8 @@ class router
     public static function Route(string $method, string $path, string|array $action, array $middlewares = []): void
     {
         if(!is_callable($action)) self::sendNotFoundFunction();
-        $pathRegex = preg_replace('/(:\w+)/', '(\w+)', $path); // تبدیل مسیر به regex
+        // تغییر مسیر برای UUID، عدد و رشته
+        $pathRegex = preg_replace('/(:\w+)/', '([a-zA-Z0-9\-]+)', $path);
         self::$routes[] = [
             'method' => $method,
             'path' => $pathRegex,
