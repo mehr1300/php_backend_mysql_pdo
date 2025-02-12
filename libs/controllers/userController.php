@@ -2,16 +2,15 @@
 
 class UserController {
     public static function login(): bool|string {
-        list($username,$password) = Base::Isset($_POST,['username' => "username",'password' => "password"]);
-        //    $password = Base::HashPassword($password);
+        $input = Base::Isset($_POST,['username' => "username",'password' => "password"]);
         $username_default = "admin";
         $password_default = "Aa@12345";
 
-        if($username_default !== $username ) Base::ReturnError("نام کاربری و یا رمز عبور اشتباه است");
-        if($password_default !== $password ) Base::ReturnError("نام کاربری و یا رمز عبور اشتباه است");
+        if($username_default !== $input['username'] ) Base::SetError("نام کاربری و یا رمز عبور اشتباه است");
+        if($password_default !== $input['password'] ) Base::SetError("نام کاربری و یا رمز عبور اشتباه است");
         $data = [
-            "user_id" => 1,
-            "username" => $username,
+            "id" => 1,
+            "username" => $input['username'],
             "role" => "user",
         ];
         $token = auth::GenerateToken($data);

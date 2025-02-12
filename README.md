@@ -4,9 +4,19 @@
 
 This project is a full-featured backend built with PHP, utilizing a MySQL database and PDO for secure database interactions.
 
+## Updates 1.2.1
+- **Fixed path error when function is missing**
+- Resolved **authentication** issues
+- Simplified and improved user authentication **security**
+- Changed the process and functionality of retrieving data in different input types using **Base::Isset**
+- Added **Base::SetData**
+- Renamed **ReturnError** to **SetError**
+- add Support **UUID**
+
+
 ## Prerequisites
 
-- **PHP** version 7 or higher
+- **PHP** version 8 or higher
 - **MySQL** version 5.6 or higher
 - **XAMPP** or any other local web server
 
