@@ -100,6 +100,33 @@ class Base
         return $data;
     }
 
+    public static function IssetCustom($BaseArray,$keys): array {
+        $result = [];
+        foreach ($keys as $key => $value) {
+            if (!isset($BaseArray[$key])) {
+                die(self::SetError("مقدار مورد نیاز ارسال نشده است."));
+            }
+            $item = match ($value){
+                "uuid" => Validate::UUID($BaseArray[$key]),
+                "username" => Validate::Username($BaseArray[$key]),
+                "password" => Validate::Password($BaseArray[$key]),
+                "national_code" => Validate::NationalCode($BaseArray[$key]),
+                "mobile" => Validate::Mobile($BaseArray[$key]),
+                "phone" => Validate::Phone($BaseArray[$key]),
+                "email" => Validate::Email($BaseArray[$key]),
+                "code" => Code::Validate($BaseArray[$key]),
+                "int" => Sanitizer::Number($BaseArray[$key]),
+                "money" => Sanitizer::Number(str_replace(",", "", $BaseArray[$key])),
+                "string" => Sanitizer::Char($BaseArray[$key]),
+                "textarea" => Sanitizer::TextArea($BaseArray[$key]),
+                "text_editor" => Sanitizer::TextEditor($BaseArray[$key]),
+                "url" => Sanitizer::Url($BaseArray[$key]),
+                default => $BaseArray[$key],
+            };
+            $result[$key] = $item;
+        }
+        return $result;
+    }
     public static function Isset(array $keys): array {
         $BaseArray = self::GetRequestData();
 
@@ -119,6 +146,7 @@ class Base
                 "email" => Validate::Email($BaseArray[$key]),
                 "code" => Code::Validate($BaseArray[$key]),
                 "int" => Sanitizer::Number($BaseArray[$key]),
+                "money" => Sanitizer::Number(str_replace(",", "", $BaseArray[$key])),
                 "string" => Sanitizer::Char($BaseArray[$key]),
                 "textarea" => Sanitizer::TextArea($BaseArray[$key]),
                 "text_editor" => Sanitizer::TextEditor($BaseArray[$key]),
@@ -428,6 +456,21 @@ class Code
 
 class PD
 {
+    public static function Transaction(callable $callback): void {
+        $db = connect();
+        try {
+            $db->beginTransaction();
+            // کدهای دیتابیس کاربر در کال‌بک
+            $callback($db);
+            // در صورت عدم بروز استثنا، عمل نهایی‌سازی
+            $db->commit();
+        } catch (\Exception $e) {
+            // در صورت بروز خطا، عملیات را به عقب بازمی‌گردانیم
+            $db->rollBack();
+            //throw $e; // یا برگرداندن پیام دلخواه
+            die(Base::SetError("خطا در عملیات"));
+        }
+    }
     public static function Insert($Table_Name, $Insert_Data): bool|string {
         $db = connect();
         $fields = array_keys($Insert_Data);

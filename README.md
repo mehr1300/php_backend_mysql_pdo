@@ -4,6 +4,13 @@
 
 This project is a full-featured backend built with PHP, utilizing a MySQL database and PDO for secure database interactions.
 
+## Updates 1.2.2
+- **Fixed path error when function is missing**
+- Add **Transaction**
+- Add in class Base **IssetCustom**
+- Add in class Base::IssetCustom **type money**
+
+
 ## Updates 1.2.1
 - **Fixed path error when function is missing**
 - Resolved **authentication** issues
