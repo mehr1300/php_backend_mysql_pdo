@@ -1,14 +1,17 @@
 <?php
-
-
 /** Initialize headers */
 const STATUS_PROJECT = "DEVELOPMENT"; //Two Value : DEVELOPMENT ,PRODUCT
 const AUTHORIZED_URL_DEVELOPMENT = ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"];
 const AUTHORIZED_URL_PRODUCT = ["", ""];
 const ORIGINAL_DOMAIN = "example.com";
 
-/** Crypto Configuration : */
+/** CRYPTO Configuration : */
 const PASSWORD_CRYPTO = "PASSWORD@!_!@CRYPTO";
+
+
+/** Upload Configuration : */
+const UPLOAD_ADDRESS = "../../../uploads/";
+const UPLOAD_PREFIX = "/uploads/";
 
 /** Config Configuration : */
 const EMAIL_LENGTH = 5;
@@ -63,6 +66,10 @@ const GET_LOGS_META = false;
 /** Token : */
 const TOKEN_NAME = "access_token";
 const TOKEN_EXPIRE_TIME = 86400;
+/** Token SMS Panel Configuration : */
+
+const TOKEN_SMS_PANEL = "";
+
 /** Database Configuration : */
 const SERVERNAME_DB = "localhost";
 const USERNAME_DB = "Database_username";

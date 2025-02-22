@@ -25,7 +25,7 @@ class Auth
             die(Base::SetError("دسترسی غیرمجاز. شما اجازه دسترسی به این مسیر را ندارید.", 403));
         }
 
-        $GLOBALS['token_contents'] = $tokenContents;
+        $GLOBALS[TOKEN_NAME] = $tokenContents;
 
         return true;
     }

@@ -160,7 +160,9 @@ class Base
 
     public static function Paging($row, $page): array {
         $limit = Sanitizer::Number($row);
-        $offset = (Sanitizer::Number($page) - 1) * $limit;
+        $page = Sanitizer::Number($page);
+        if(!($limit > 0 && $page > 0)) die(Base::SetError("شماره صفحه و تعداد سطر ارسال شده صحیح نیست."));
+        $offset = ($page - 1) * $limit;
         return [$limit, $offset];
     }
 
@@ -186,7 +188,7 @@ class Base
     }
 
     public static function SendSMS($data = null) {
-        $url = "https://api.kavenegar.com/v1/66793962306279564942496C4867304B574F73564D732B76346A337135564665524D345A47596B766C4C303D/sms/send.json";
+        $url = "https://api.kavenegar.com/v1/".TOKEN_SMS_PANEL."/sms/send.json";
 
         $headers = array(
             'Accept: application/json',
@@ -224,12 +226,6 @@ class Base
             }
             return $json_return->status;
         }
-    }
-
-    public static function CreatePagingNumber($row_per_page, $page_number): array {
-        $limit = self::ValidateNumberGreaterZero($row_per_page);
-        $offset = (Sanitizer::Number($page_number) - 1) * $limit;
-        return [$limit, $offset];
     }
 
     public static function ValNotExistInDbReturn($table_name, $condition, array $params, $message = "این رکورد تکراری است و قبلا استفاده شده است.") {

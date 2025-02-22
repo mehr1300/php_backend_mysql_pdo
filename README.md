@@ -4,6 +4,12 @@
 
 This project is a full-featured backend built with PHP, utilizing a MySQL database and PDO for secure database interactions.
 
+### Updates 1.2.3:
+- **Removed the `CreatePagingNumber` class** due to redundancy with `Paging`.
+- **Updated the `configs-example` file**.
+- **Fixed issue with token** in `$GLOBALS['token_contents']` and corrected it to `$GLOBALS[TOKEN_NAME]`.
+
+
 ## Updates 1.2.2
 - **Fixed path error when function is missing**
 - Add **Transaction**
