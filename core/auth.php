@@ -2,10 +2,6 @@
 
 class Auth
 {
-    /**
-     * این متد بررسی می‌کند که آیا توکن معتبر است یا خیر.
-     * در صورت معتبر بودن توکن، نقش و تاریخ انقضا نیز بررسی می‌شود.
-     */
     public static function CheckAuth(string $requiredRole = null): bool
     {
         $token = self::GetTokenFromRequest();
@@ -16,23 +12,15 @@ class Auth
         if ($tokenContents === false) {
             die(Base::SetError("توکن نامعتبر یا منقضی شده. لطفاً مجدداً وارد شوید.", 401));
         }
-
         if (isset($tokenContents['token_expire_date']) && $tokenContents['token_expire_date'] <= time()) {
             die(Base::SetError("توکن منقضی شده است. لطفاً  مجدد وارد شوید.", 401));
         }
-
         if ($requiredRole && (!isset($tokenContents['role']) || $tokenContents['role'] !== $requiredRole)) {
             die(Base::SetError("دسترسی غیرمجاز. شما اجازه دسترسی به این مسیر را ندارید.", 403));
         }
-
         $GLOBALS[TOKEN_NAME] = $tokenContents;
-
         return true;
     }
-
-    /**
-     * گرفتن توکن از هدر درخواست
-     */
     private static function GetTokenFromRequest(): string|false
     {
         $headers = apache_request_headers();
@@ -50,10 +38,6 @@ class Auth
         }
         return false;
     }
-
-    /**
-     * پارس کردن توکن به آرایه
-     */
     private static function ParseToken(string $token): array|false
     {
         try {
@@ -70,17 +54,11 @@ class Auth
                     $contents[$key] = $val;
                 }
             }
-
             return $contents;
-
         } catch (Exception $e) {
             return false;
         }
     }
-
-    /**
-     * برای ساخت توکن جدید
-     */
     public static function GenerateToken(array $token_variables): string
     {
         if (!isset($token_variables['role'])) {

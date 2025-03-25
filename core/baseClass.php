@@ -1,7 +1,5 @@
 <?php
-
 use JetBrains\PhpStorm\NoReturn;
-
 class Base
 {
     public static function SendToken($token, $expiresTime = TOKEN_EXPIRE_TIME, $tokenName = TOKEN_NAME, $path = "/", $secure = true, $httponly = true, $sameSite = "None"): string {
@@ -14,11 +12,9 @@ class Base
                 "httponly" => $httponly,
                 "domain" => $domain,
                 "sameSite" => $sameSite,
-
             ]
         );
     }
-
     public static function SetError($message = "خطا در عملیات", $code = 400): bool|string {
         header("Content-Type: x-www-form-urlencoded");
         http_response_code($code);
@@ -29,7 +25,6 @@ class Base
             )
         );
     }
-
     public static function SetData($data = null, $message = "عملیات با موفقیت انجام شد.", $code = 200): bool|string {
         header("Content-Type: x-www-form-urlencoded");
         http_response_code($code);
@@ -40,16 +35,13 @@ class Base
             )
         );
     }
-
     #[NoReturn] public static function BaseRedirectTo($addr): void {
         header("location:$addr");
         exit;
     }
-
     public static function HashPassword($str): string {
         return password_hash($str, PASSWORD_ARGON2ID);
     }
-
     public static function PasswordVerify($entered_password, $hashed_password_from_db): bool {
         if (password_verify($entered_password, $hashed_password_from_db)) {
             return true;
@@ -57,13 +49,12 @@ class Base
             return false;
         }
     }
-
     public static function GetRequestData(): array {
         $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
         $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-
         $data = [];
 
+        // مدیریت application/json
         if (stripos($contentType, 'application/json') !== false) {
             $input = file_get_contents('php://input');
             $jsonData = json_decode($input, true);
@@ -71,11 +62,60 @@ class Base
                 $data = $jsonData;
             }
         }
+        // مدیریت multipart/form-data یا فرم‌های دیگر
+        else {
+            if (in_array($method, ['POST', 'PUT'])) {
+                // استفاده از $_POST برای POST معمولی
+                $data = $_POST;
 
-        if (empty($data)) {
+                // اگر $_POST خالی بود و درخواست multipart/form-data بود
+                if (empty($data) && stripos($contentType, 'multipart/form-data') !== false) {
+                    $input = file_get_contents('php://input');
+                    if ($input) {
+                        // استخراج boundary از Content-Type
+                        preg_match('/boundary=(.*)$/', $contentType, $matches);
+                        if (!isset($matches[1]) || empty($matches[1])) {
+                            return $data; // اگر boundary پیدا نشد، داده خالی برگردون
+                        }
+                        $boundary = $matches[1];
+
+                        // جدا کردن بخش‌ها با boundary
+                        $parts = explode("--" . $boundary, $input);
+                        foreach ($parts as $part) {
+                            $part = trim($part);
+                            if (empty($part) || $part === '--') continue;
+
+                            // جدا کردن هدر و بدنه
+                            $headerEnd = strpos($part, "\r\n\r\n");
+                            if ($headerEnd === false) continue;
+
+                            $headers = substr($part, 0, $headerEnd);
+                            $body = trim(substr($part, $headerEnd + 4));
+
+                            // استخراج نام فیلد
+                            if (preg_match('/name="([^"]+)"/', $headers, $match)) {
+                                $key = $match[1];
+                                if (preg_match('/filename="([^"]+)"/', $headers, $fileMatch)) {
+                                    // مدیریت فایل
+                                    $data[$key] = [
+                                        'name' => $fileMatch[1],
+                                        'content' => $body
+                                    ];
+                                } else {
+                                    // داده متنی
+                                    $data[$key] = $body;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ادغام با $_REQUEST اگر چیزی وجود داشت
             $data = array_merge($data, $_REQUEST);
         }
 
+        // مدیریت فایل‌ها از $_FILES (برای POST معمولی)
         if (!empty($_FILES)) {
             foreach ($_FILES as $fileKey => $fileInfo) {
                 if (is_array($fileInfo['name'])) {
@@ -91,7 +131,6 @@ class Base
                     }
                     $data[$fileKey] = $filesArray;
                 } else {
-                    // ارسال یک فایل تکی
                     $data[$fileKey] = $fileInfo;
                 }
             }
@@ -99,7 +138,6 @@ class Base
 
         return $data;
     }
-
     public static function IssetCustom($BaseArray,$keys): array {
         $result = [];
         foreach ($keys as $key => $value) {
@@ -117,10 +155,12 @@ class Base
                 "code" => Code::Validate($BaseArray[$key]),
                 "int" => Sanitizer::Number($BaseArray[$key]),
                 "money" => Sanitizer::Number(str_replace(",", "", $BaseArray[$key])),
-                "string" => Sanitizer::Char($BaseArray[$key]),
-                "textarea" => Sanitizer::TextArea($BaseArray[$key]),
+                "string" => Validate::Char($BaseArray[$key]),
+                "textarea" => Validate::TextArea($BaseArray[$key]),
                 "text_editor" => Sanitizer::TextEditor($BaseArray[$key]),
                 "url" => Sanitizer::Url($BaseArray[$key]),
+                "image" => Sanitizer::Image($BaseArray[$key]),
+                "site" => Sanitizer::Site($BaseArray[$key]),
                 default => $BaseArray[$key],
             };
             $result[$key] = $item;
@@ -129,9 +169,7 @@ class Base
     }
     public static function Isset(array $keys): array {
         $BaseArray = self::GetRequestData();
-
         $result = [];
-
         foreach ($keys as $key => $validationType) {
             if (!isset($BaseArray[$key])) {
                 die(self::SetError("مقدار مورد نیاز ارسال نشده است."));
@@ -147,46 +185,41 @@ class Base
                 "code" => Code::Validate($BaseArray[$key]),
                 "int" => Sanitizer::Number($BaseArray[$key]),
                 "money" => Sanitizer::Number(str_replace(",", "", $BaseArray[$key])),
-                "string" => Sanitizer::Char($BaseArray[$key]),
-                "textarea" => Sanitizer::TextArea($BaseArray[$key]),
+                "string" => Validate::Char($BaseArray[$key]),
+                "textarea" => Validate::TextArea($BaseArray[$key]),
                 "text_editor" => Sanitizer::TextEditor($BaseArray[$key]),
                 "url" => Sanitizer::Url($BaseArray[$key]),
+                "image" => Sanitizer::Image($BaseArray[$key]),
+                "site" => Sanitizer::Site($BaseArray[$key]),
                 default => $BaseArray[$key],
             };
             $result[$key] = $item;
         }
         return $result;
     }
-
     public static function Paging($row, $page): array {
         $limit = Sanitizer::Number($row);
-        $page = Sanitizer::Number($page);
-        if(!($limit > 0 && $page > 0)) die(Base::SetError("شماره صفحه و تعداد سطر ارسال شده صحیح نیست."));
-        $offset = ($page - 1) * $limit;
+        $offset = (Sanitizer::Number($page) - 1) * $limit;
         return [$limit, $offset];
     }
-
     public static function ChangeSpaceWithChar($value, $char = "-"): string {
         $value = Sanitizer::Char($value);
         $value = preg_replace('/\s+/', $char, $value);
         $value = htmlspecialchars($value);
         return htmlentities($value);
     }
-
     public static function ValidateNumberLessZero($num, $message = "خطا در عملیات"): ?int {
         if (Sanitizer::Number($num) > 0) {
             die(self::SetError($message));
         }
         return Sanitizer::Number($num);
     }
-
     public static function ValidateNumberGreaterZero($num, $message = "خطا در عملیات"): ?int {
         if (Sanitizer::Number($num) < 1) {
             die(self::SetError($message));
         }
         return Sanitizer::Number($num);
     }
-
     public static function SendSMS($data = null) {
         $url = "https://api.kavenegar.com/v1/".TOKEN_SMS_PANEL."/sms/send.json";
 
@@ -227,17 +260,14 @@ class Base
             return $json_return->status;
         }
     }
-
     public static function ValNotExistInDbReturn($table_name, $condition, array $params, $message = "این رکورد تکراری است و قبلا استفاده شده است.") {
         self::ValidateNumberLessZero(PD::SingleSelect($table_name, $condition, $params), $message);
         return $params[0];
     }
-
     public static function ValExistInDbReturn($table_name, $condition, array $params, $message = "چنین رکوردی وجود ندارد.") {
         self::ValidateNumberGreaterZero(PD::SingleSelect($table_name, $condition, $params), $message);
         return $params[0];
     }
-
     public static function DuplicateValue(array $Duplicate_List, string $Table_Name, string $Condition): bool|int {
         if (!empty($Duplicate_List)) {
             foreach ($Duplicate_List as $key => $value) {
@@ -262,24 +292,20 @@ class Sanitizer
         $value = str_replace("<script", "", $value);
         return str_replace("<", "", $value);
     }
-
     private static function ClearChar($value): string {
         $value = str_replace(['"', '""', "''", "'", '/'], '', $value);
         $value = preg_replace("/\x{200c}/u", ' ', $value);
         $value = preg_replace("/\x{200F}/u", '', $value);
         return preg_replace('/\s+/', ' ', $value);
     }
-
     private static function ClearAllSpecialChar($value): string {
         $value = str_replace(['>', ',', ",,", "'", "''", '"', '""', "''", '.', ':', '_', ']', '/', '[', '|', '{', '}', '>', '<', "\u200C"], "", $value);
         $value = str_replace(["  ", "   ", "    ", "     ", "      ", "       "], " ", $value);
         return preg_replace('/\s+/', ' ', $value);
     }
-
     public static function Number($num): ?int {
         return (int)$num;
     }
-
     public static function Char($value): ?string {
         if ($value === null) return null;
         $value = trim($value);
@@ -293,7 +319,6 @@ class Sanitizer
         }
         return htmlspecialchars($value, ENT_QUOTES, 'UTF-8', false);
     }
-
     public static function Url($value, $string = ""): string {
         $value = $value ." ". $string;
         $value = trim($value);
@@ -310,7 +335,20 @@ class Sanitizer
         $value = htmlspecialchars($value);
         return htmlentities($value);
     }
-
+    public static function Image($value): string {
+        $value = trim($value);
+        $value = strtolower($value);
+        $value = TextHelper::textArToFa($value);
+        $value = TextHelper::numFaToEn($value);
+        $value = self::PreventDefault($value);
+        $value = preg_replace('/\s+/', "-", $value);
+        $value = trim($value,"-");
+        if (function_exists("addslashes")) {
+            $value = addslashes($value);
+        }
+        $value = htmlspecialchars($value);
+        return htmlentities($value);
+    }
     public static function ImageName($value, $string = ""): string {
         $value = trim($value);
         $value = strtolower($value);
@@ -326,7 +364,22 @@ class Sanitizer
         $value = htmlspecialchars($value);
         return htmlentities($value);
     }
-
+    public static function Site($value): ?string {
+        if ($value === null) return null;
+        $value = trim($value);
+        $value = strtolower($value);
+        $value = TextHelper::textArToFa($value);
+        $value = TextHelper::numFaToEn($value);
+        $value = self::PreventDefault($value);
+        $value = str_replace(['"', '""', "''", "'"], '', $value);
+        $value = preg_replace("/\x{200c}/u", ' ', $value);
+        $value = preg_replace("/\x{200F}/u", '', $value);
+        $value = preg_replace('/\s+/', ' ', $value);
+        if (function_exists("addslashes")) {
+            $value = addslashes($value);
+        }
+        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8', false);
+    }
     public static function TextArea($value): ?string {
         if ($value === null) return null;
         $value = trim($value);
@@ -342,7 +395,6 @@ class Sanitizer
         }
         return htmlspecialchars($value, ENT_QUOTES, 'UTF-8', false);
     }
-
     public static function TextEditor($value): ?string {
         $value = trim($value);
         $value = strtolower($value);
@@ -361,7 +413,6 @@ class TextHelper
         $latin_num = range(0, 9);
         return str_replace($latin_num, $persian_num, $string);
     }
-
     public static function numFaToEn($string): array|string {
         $persian1 = array('۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹');
         $persian2 = array('٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩');
@@ -369,7 +420,6 @@ class TextHelper
         $string = str_replace($persian1, $num, $string);
         return str_replace($persian2, $num, $string);
     }
-
     public static function textArToFa($text): array|string {
         $arabic_digits = array('ي', 'ك', 'ة', 'ۀ', 'هٔ', 'ؤ', 'أ');
         $persian_digits = array('ی', 'ک', 'ه', 'ه', 'ه', 'و', 'ا');
@@ -386,7 +436,6 @@ class Code
         }
         return $code;
     }
-
     public static function Generate(): string {
         do {
             $uniqueCode = self::generateUniqueCode();
@@ -394,7 +443,6 @@ class Code
         self::storeCode($uniqueCode);
         return $uniqueCode;
     }
-
     private static function generateUniqueCode(): string {
         $code = '';
         try {
@@ -414,7 +462,6 @@ class Code
 
         return $code . $checkDigit;
     }
-
     private static function calculateCheckDigit(string $code): int {
         $sum = 0;
         $length = strlen($code);
@@ -425,7 +472,6 @@ class Code
         }
         return $sum % 11;
     }
-
     private static function validateCode(string $fullCode): bool {
         if (strlen($fullCode) !== (CODE_LENGTH + 1)) {
             return false;
@@ -435,13 +481,11 @@ class Code
         $saltedCode = $code . CODE_SALT;
         return self::calculateCheckDigit($saltedCode) === $checkDigit;
     }
-
     private static function isCodeExists(string $code): bool {
         $stmt = connect()->prepare("SELECT COUNT(*) FROM tbl_unique_codes WHERE unique_code = ?");
         $stmt->execute([$code]);
         return (bool)$stmt->fetchColumn();
     }
-
     private static function storeCode(string $code): void {
         $stmt = connect()->prepare("INSERT INTO tbl_unique_codes (unique_code) VALUES (?)");
         if (!$stmt->execute([$code])) {
@@ -452,38 +496,38 @@ class Code
 
 class PD
 {
+    private static $db = null;
+    private static function getConnection(): ?PDO {
+        if (self::$db === null) {
+            self::$db = connect();
+        }
+        return self::$db;
+    }
     public static function Transaction(callable $callback): void {
-        $db = connect();
+        $db = self::getConnection();
         try {
             $db->beginTransaction();
-            // کدهای دیتابیس کاربر در کال‌بک
-            $callback($db);
-            // در صورت عدم بروز استثنا، عمل نهایی‌سازی
+            $callback(); // بدون پاس دادن $db
             $db->commit();
         } catch (\Exception $e) {
-            // در صورت بروز خطا، عملیات را به عقب بازمی‌گردانیم
             $db->rollBack();
-            //throw $e; // یا برگرداندن پیام دلخواه
-            die(Base::SetError("خطا در عملیات"));
+            error_log("خطا در تراکنش: " . $e->getMessage());
+            die(Base::SetError("خطا در عملیات: " . $e->getMessage()));
         }
     }
     public static function Insert($Table_Name, $Insert_Data): bool|string {
-        $db = connect();
+        $db = self::getConnection();
         $fields = array_keys($Insert_Data);
         $key = empty($fields) ? "" : "`" . implode("`,`", $fields) . "`";
         $test = array_fill(0, count($fields), "?");
         $values = array_values($Insert_Data);
         $query = "INSERT INTO $Table_Name($key) VALUES (" . implode(",", $test) . ")";
         $stmt = $db->prepare($query);
-        $stmt = $stmt->execute($values);
-        if ($stmt) {
-            return $db->lastInsertId();
-        }
-        return false;
+        $stmt->execute($values);
+        return $db->lastInsertId() ?: false;
     }
-
     public static function Update(string $Table_Name, array $data, string $Condition, array $params): bool|int {
-        $db = connect();
+        $db = self::getConnection();
         $Condition_string = '';
         if (!empty($Condition)) {
             if (substr(strtoupper(trim($Condition)), 0, 5) != 'WHERE') {
@@ -504,9 +548,8 @@ class PD
         $stmt = $db->prepare($query);
         return $stmt->execute($value);
     }
-
     public static function Delete(string $Table_Name, string $Condition, array $params): bool {
-        $db = connect();
+        $db = self::getConnection();
         $Condition_string = '';
         if (!empty($Condition)) {
             if (substr(strtoupper(trim($Condition)), 0, 5) != 'WHERE') {
@@ -519,92 +562,103 @@ class PD
         $stmt = $db->prepare($query);
         return $stmt->execute($params);
     }
-
     public static function SingleSelect(string $Table_Name, string $Condition, array $params, $What_Row = 'count(*)') {
-        $stmt = connect()->prepare("SELECT " . $What_Row . " FROM " . $Table_Name . " " . $Condition . "");
+        $db = self::getConnection();
+        $stmt = $db->prepare("SELECT " . $What_Row . " FROM " . $Table_Name . " " . $Condition);
         $stmt->execute($params);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (is_array($result) && !empty($result)) {
-            return $result[$What_Row];
-        } else {
-            return false;
-        }
+        return (is_array($result) && !empty($result)) ? $result[$What_Row] : false;
     }
-
     public static function RowSelect(string $Table_Name, string $Condition, array $params, $What_Row = "*") {
-        $stmt = connect()->prepare("SELECT " . $What_Row . " FROM " . $Table_Name . " " . $Condition . "");
+        $db = self::getConnection();
+        $stmt = $db->prepare("SELECT " . $What_Row . " FROM " . $Table_Name . " " . $Condition);
         $stmt->execute($params);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
     public static function MultiSelect(string $Table_Name, string $Condition, array $params, $What_Row = "*"): bool|array {
-        $stmt = connect()->prepare("SELECT " . $What_Row . " FROM " . $Table_Name . " " . $Condition . "");
+        $db = self::getConnection();
+        $stmt = $db->prepare("SELECT " . $What_Row . " FROM " . $Table_Name . " " . $Condition);
         $stmt->execute($params);
         $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
         return $result ?: [];
     }
-
     public static function GetProperties($Key) {
-        $stmt = connect()->prepare("SELECT key_value  FROM tbl_properties WHERE key_name = ?");
-        $stmt->execute(array($Key));
+        $db = self::getConnection();
+        $stmt = $db->prepare("SELECT key_value FROM tbl_properties WHERE key_name = ?");
+        $stmt->execute([$Key]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (is_array($result) && !empty($result)) {
-            return $result['key_value'];
-        } else {
-            return "CANT_FIND_KEY";
-        }
+        return (is_array($result) && !empty($result)) ? $result['key_value'] : "CANT_FIND_KEY";
     }
-
     public static function SetProperties($Key, $value): void {
-        $Data = array(
+        $Data = [
             'key_value' => $value,
             'last_change' => time()
-        );
-        self::Update("tbl_properties", $Data, "WHERE key_name = ? ", array($Key));
+        ];
+        self::Update("tbl_properties", $Data, "WHERE key_name = ?", [$Key]);
     }
-
     public static function SetLoginCountAdmin(int $admin_id): void {
         self::Insert(
-            "tbl_login_count_admin", array(
+            "tbl_login_count_admin", [
                 'login_time' => time(),
                 'admin_id' => $admin_id,
                 "ip" => $_SERVER['REMOTE_ADDR'],
-            )
+            ]
         );
     }
-
     public static function SetLoginCountUser(int $user_id): void {
         self::Insert(
-            "tbl_login_count_user", array(
+            "tbl_login_count_user", [
                 'login_time' => time(),
                 'user_id' => $user_id,
                 "ip" => $_SERVER['REMOTE_ADDR'],
-            )
+            ]
         );
     }
-
     public static function SetLogs(int $Log_Type, $Log_From, $Log_Details): void {
         self::Insert(
-            "tbl_logs", array(
+            "tbl_logs", [
                 'log_type' => $Log_Type,
                 'log_from' => $Log_From,
                 'log_details' => $Log_Details,
                 "ip" => $_SERVER['REMOTE_ADDR'],
                 "user_agent" => $_SERVER['HTTP_USER_AGENT'],
-            )
+            ]
         );
     }
 }
 
 class Validate
 {
+    public static function Char($string,$length = 255): ?string {
+        $string = Sanitizer::Char($string);
+        if (strlen($string) > $length) {
+            die(Base::SetError("تعداد کارکتر نباید برای این داده از 255 بیشتر باشد."));
+        }
+        return $string;
+    }
+    public static function TextArea($textArea,$length = 10000): ?string {
+        $textArea = Sanitizer::TextArea($textArea);
+        if (strlen($textArea) > $length) {
+            die(Base::SetError("تعداد کارکتر نباید برای این داده از 10000 بیشتر باشد."));
+        }
+        return $textArea;
+    }
+    public static function Number($number,$greater_zero = true): ?string {
+        $number = Sanitizer::Number($number);
+        if (!preg_match('/^[0-9]+$/', $number)) {
+            die(Base::SetError("عدد وارد شده صحیح نیست."));
+        }
+        if ($greater_zero && $number < 1) {
+            die(Base::SetError("عدد وارد شده نباید کمتر از 0 یا 0 باشد."));
+        }
+        return $number;
+    }
     public static function UUID($uuid): ?string {
         if (!preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i', $uuid)) {
             die(Base::SetError("UUID وارد شده معتبر نیست."));
         }
         return $uuid;
     }
-
     public static function Username($username): ?string {
         $username = Sanitizer::Char($username);
         if (!preg_match('/^[A-Za-z0-9_]{' . USERNAME_LENGTH . ',}$/', $username)) {
@@ -612,7 +666,6 @@ class Validate
         }
         return $username;
     }
-
     public static function Password($password): bool|string {
         if (preg_match('/[^a-zA-Z0-9@#$!]/', $password)) {
             die(Base::SetError("پسورد ارسالی دارای کاکتر های مجاز نیست."));
@@ -625,7 +678,6 @@ class Validate
         }
         return $password;
     }
-
     public static function Email($email): ?string {
         $email = Sanitizer::Char($email);
         $email = filter_var($email, FILTER_SANITIZE_EMAIL);
@@ -644,7 +696,6 @@ class Validate
         }
         return $email;
     }
-
     public static function Mobile($mobile): null|string {
         $mobile = Sanitizer::Char($mobile);
         $mobile = preg_replace('/[^0-9]/', '', $mobile);
@@ -653,7 +704,6 @@ class Validate
         }
         return $mobile;
     }
-
     public static function Phone($phone): null|string {
         $phone = Sanitizer::Char($phone);
         if (!preg_match('/^0\d{10}$/', $phone)) {
@@ -665,7 +715,6 @@ class Validate
         }
         return $phone;
     }
-
     public static function NationalCode($code) {
         $code = Sanitizer::Char($code);
         if (!preg_match('/^[0-9]{10}$/', $code)) {
@@ -689,14 +738,16 @@ class Validate
 
 class Upload
 {
-    /**
-     * آپلود فایل (تصویر، ویدیو، سند) در پوشه‌ی موردنظر
-     *
-     * @param array $file اطلاعات فایل آپلودی از طریق $_FILES
-     * @param string $folderName نام پوشه‌ای که فایل در آن ذخیره می‌شود
-     *
-     * @return array ساختاری حاوی وضعیت، مسیر، پیام و نوع فایل
-     */
+    public static function UploadImage($nameUpload,$uploadFolder): string |array {
+        if(isset($_FILES[$nameUpload])){
+            if (empty($_FILES[$nameUpload]['name']) || empty($_FILES[$nameUpload]['tmp_name'])) {
+                return "";
+            }
+            $result = Upload::Image($_FILES[$nameUpload],$uploadFolder);
+            return $result['status'] === "success" ? $result['url'] : die(Base::SetError($result['message']));
+        }
+        return "";
+    }
     public static function Image(array $file, string $folderName): array {
         if (empty($file['name']) || empty($file['tmp_name'])) {
             return ['status' => 'failed', 'url' => null, 'message' => 'هیچ فایلی جهت آپلود ارسال نشده است.', 'type' => ''];
@@ -726,11 +777,11 @@ class Upload
         }
 
         if ($fileSize > 20 * 1024 * 1024) {
-            return ['status' => 'failed', 'url' => null, 'message' => 'حجم فایل نباید کمتر از 20 مگابایت باشد.', 'type' => $fileExtType];
+            return ['status' => 'failed', 'url' => null, 'message' => 'حجم فایل نباید بیشتر از 20 مگابایت باشد.', 'type' => $fileExtType];
         }
 
-        if ($fileSize < 10 * 1024) {
-            return ['status' => 'failed', 'url' => null, 'message' => 'حجم فایل نباید کمتر از 10 کیلوبایت باشد.', 'type' => $fileExtType];
+        if ($fileSize < 4 * 1024) {
+            return ['status' => 'failed', 'url' => null, 'message' => 'حجم فایل نباید کمتر از 4 کیلوبایت باشد.', 'type' => $fileExtType];
         }
 
         $destinationFolder = UPLOAD_ADDRESS . $folderName;
@@ -750,7 +801,6 @@ class Upload
 
         return ['status' => 'failed', 'url' => null, 'message' => 'خطا در آپلود فایل رخ داده است.', 'type' => $fileExtType];
     }
-
     public static function MultiImage($file, $address, $folderName, $fileName): array|string {
         $errors = 1;
         $result = [];
@@ -803,7 +853,6 @@ class Upload
         }
         return array("status" => "failed", "url" => null, "message" => $errors, "type" => "");
     }
-
     public static function MultiSubImage($file, $sub, $address, $folderName, $fileName): array|string {
         $errors = 1;
         $result = [];
@@ -856,7 +905,6 @@ class Upload
         }
         return array("status" => "failed", "url" => null, "message" => $errors, "type" => "");
     }
-
     private static function CheckMaxSize($file_size, $file_ext_type): void {
         if ($file_size > UPLOAD_MAX_FILE_SIZE) {
             $max_size_mb = UPLOAD_MAX_FILE_SIZE / (1024 * 1024);
@@ -875,7 +923,6 @@ class Upload
             );
         }
     }
-
     private static function CheckMinSize($file_size, $file_ext_type): void {
         if ($file_size < UPLOAD_MIN_FILE_SIZE) {
             $min_size_kb = UPLOAD_MIN_FILE_SIZE / (1024);
@@ -895,7 +942,6 @@ class Upload
         }
 
     }
-
 }
 
 
