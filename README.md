@@ -3,6 +3,11 @@
 
 This project is a full-featured backend built with PHP, utilizing a MySQL database and PDO for secure database interactions.
 
+### Updates 1.2.5:
+- **Update `Base::Isset`**.
+- **Add  `Validate::Money`**.
+
+
 ### Updates 1.2.4:
 - **Add And Update `PD::Transaction`**.
 - **Add  `Validate::Number`**.
@@ -12,7 +17,6 @@ This project is a full-featured backend built with PHP, utilizing a MySQL databa
 - **Updated the `configs-example.php` file**.
 - **Updated the `auth.php` file**.
 - **Updated the `baseClass.php` file**.
-
 
 
 ### Updates 1.2.3:
@@ -333,6 +337,90 @@ $comment = Sanitizer::TextArea($_POST['comment']);
 // Using the TextEditor method to sanitize rich text editor input
 $content = Sanitizer::TextEditor($_POST['content']);
 ```
+
+
+#### Example Usage of the `Base::Isset`
+
+```php
+<?php
+
+// Professional (Concise) Usage Example
+// Compact schema using pipe format for most fields, with all features demonstrated.
+
+$input = Base::Isset([
+    'username' => "username|minLength:3|maxLength:20|label:'نام کاربری'|options:toLow=false,arTfa=true",
+    'password' => "password|minLength:8|label:'رمز عبور'",
+    'status' => ['active', 'inactive', 'pending'],
+    'search' => "string|minLength:1|empty|label:جستجو",
+    'old' => "int|min:18|label:سن",
+    'email' => "email|empty|maxLength:100|label:ایمیل",
+    'money' => "money|min:1000|max:1000000|label:مبلغ",
+    'description' => "textarea|length:200|label:توضیحات|options:toLow=true,arTfa=false",
+    'role' => "string|in:admin,user,guest|label:نقش",
+    'score' => "int|max:100|in:0,50,100|label:امتیاز",
+]);
+
+
+// Simple (Detailed) Usage Example with English Comments
+// Uses associative arrays for readability, showing optional fields, labels, and options.
+// Ideal for beginners; backward compatible with simple rules.
+
+$input = Base::Isset([
+    // Associative array: Username with length rules, custom label, and options (disable toLow, enable arTfa).
+    'username' => [
+        'type' => 'username',       // Base validation type.
+        'minLength' => 3,           // Minimum length requirement.
+        'maxLength' => 20,          // Maximum length requirement.
+        'label' => 'نام کاربری',   // Custom label for error messages (optional; defaults to field name).
+        'options' => ['toLow' => false, 'arTfa' => true],  // String processing options (optional, defaults to true for both).
+    ],
+    // String pipe: Password with min length and custom label (no options needed).
+    'password' => "password|minLength:8|label:'رمز عبور'",
+    // List array: Enum for status (must match one; default label is 'status').
+    'status' => ['active', 'inactive', 'pending'],
+    // String pipe: Optional search string with min length and label.
+    'search' => "string|minLength:1|empty|label:جستجو",
+    // String pipe: Integer age with min value and label.
+    'old' => "int|min:18|label:سن",
+    // Associative array: Optional email with max length and label (no options).
+    'email' => [
+        'type' => 'email',
+        'empty' => true,            // Makes field optional.
+        'maxLength' => 100,
+        'label' => 'ایمیل',
+    ],
+    // Associative array: Money with min/max values and label.
+    'money' => [
+        'type' => 'money',
+        'min' => 1000,
+        'max' => 1000000,
+        'label' => 'مبلغ',
+    ],
+    // Associative array: Textarea with exact length, label, and options (enable toLow, disable arTfa).
+    'description' => [
+        'type' => 'textarea',
+        'length' => 200,            // Exact length requirement.
+        'label' => 'توضیحات',
+        'options' => ['toLow' => true, 'arTfa' => false],
+    ],
+    // Associative array: String with enum ('in') rule and label.
+    'role' => [
+        'type' => 'string',
+        'in' => 'admin,user,guest', // Must be one of these values.
+        'label' => 'نقش',
+    ],
+    // String pipe: Integer score with max and enum rules, plus label.
+    'score' => "int|max:100|in:0,50,100|label:امتیاز",
+]);
+
+// Notes:
+// - Labels are optional; if omitted, uses field name (e.g., 'username') in errors.
+// - Options apply only to string-based types (string, textarea, text_editor) and are optional.
+// - All inputs are securely sanitized (e.g., htmlspecialchars, addslashes, XSS filters).
+// - Supports backward compatibility with simple rules like 'username' => 'username'.
+ 
+```
+
 
 #### Descriptions
 

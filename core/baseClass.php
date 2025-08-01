@@ -167,40 +167,174 @@ class Base
         }
         return $result;
     }
-    public static function Isset(array $keys): array {
-        $BaseArray = self::GetRequestData();
+    public static function Isset(array $schema): array
+    {
+        $data   = self::GetRequestData();
         $result = [];
-        foreach ($keys as $key => $validationType) {
-            if (!isset($BaseArray[$key])) {
-                die(self::SetError("مقدار مورد نیاز ارسال نشده است."));
+        foreach ($schema as $field => $rule) {
+            $label = $field;
+            $options = [];
+            $isOptional = false;
+            $pipe = '';
+
+            if (is_array($rule) && !array_is_list($rule)) {
+                $type = $rule['type'] ?? '';
+                $label = $rule['label'] ?? $field;
+                $options = $rule['options'] ?? [];
+                $rulesParts = [];
+                foreach ($rule as $key => $value) {
+                    if (!in_array($key, ['type', 'label', 'options'])) {
+                        if ($key === 'empty' && $value === true) {
+                            $isOptional = true;
+                            $rulesParts[] = 'empty';
+                        } elseif ($key === 'in' && is_string($value)) {
+                            $rulesParts[] = "in:{$value}";
+                        } elseif (is_int($value) || is_float($value) || is_string($value)) {
+                            $rulesParts[] = "{$key}:{$value}";
+                        } else {
+                            // Ignore invalid rules
+                        }
+                    }
+                }
+                $pipe = $type . (count($rulesParts) > 0 ? '|' . implode('|', $rulesParts) : '');
+            } elseif (is_string($rule)) {
+                $pipe = $rule;
+                $isOptional = str_contains($pipe, 'empty');
+            } elseif (is_array($rule) && array_is_list($rule)) {
+                // Enum list
             }
-            $item = match ($validationType) {
-                "uuid" => Validate::UUID($BaseArray[$key]),
-                "username" => Validate::Username($BaseArray[$key]),
-                "password" => Validate::Password($BaseArray[$key]),
-                "national_code" => Validate::NationalCode($BaseArray[$key]),
-                "mobile" => Validate::Mobile($BaseArray[$key]),
-                "phone" => Validate::Phone($BaseArray[$key]),
-                "email" => Validate::Email($BaseArray[$key]),
-                "code" => Code::Validate($BaseArray[$key]),
-                "int" => Sanitizer::Number($BaseArray[$key]),
-                "money" => Sanitizer::Number(str_replace(",", "", $BaseArray[$key])),
-                "string" => Validate::Char($BaseArray[$key]),
-                "textarea" => Validate::TextArea($BaseArray[$key]),
-                "text_editor" => Sanitizer::TextEditor($BaseArray[$key]),
-                "url" => Sanitizer::Url($BaseArray[$key]),
-                "image" => Sanitizer::Image($BaseArray[$key]),
-                "site" => Sanitizer::Site($BaseArray[$key]),
-                default => $BaseArray[$key],
-            };
-            $result[$key] = $item;
+            if (!array_key_exists($field, $data)) {
+                if ($isOptional) {
+                    $result[$field] = null;
+                    continue;
+                }
+                die(self::SetError("مقدار «{$label}» ارسال نشده است."));
+            }
+
+            $value = $data[$field];
+
+            if ($isOptional && in_array($value, ['', null, 'null'], true)) {
+                $result[$field] = null;
+                continue;
+            }
+
+            if (is_array($rule) && array_is_list($rule)) {
+                if (!in_array($value, $rule, true)) {
+                    die(self::SetError("مقدار «{$label}» نامعتبر است."));
+                }
+                $result[$field] = $value;
+                continue;
+            }
+
+            if ($pipe) {
+                if (str_contains($pipe, '|')) {
+                    $result[$field] = self::validatePipe($field, $value, $pipe, $label, $options);
+                } else {
+                    $result[$field] = self::validateClassic($field, $value, $pipe, $label, $options);
+                }
+                continue;
+            }
+            $result[$field] = $value;
         }
         return $result;
     }
+    private static function validateClassic(string $key, mixed $value, string $rule, string $label, array $options): mixed
+    {
+        return match ($rule) {
+            'uuid'          => Validate::UUID($value),
+            'username'      => Validate::Username($value),
+            'password'      => Validate::Password($value),
+            'national_code' => Validate::NationalCode($value),
+            'mobile'        => Validate::Mobile($value),
+            'phone'         => Validate::Phone($value),
+            'email'         => Validate::Email($value),
+            'code'          => Code::Validate($value),
+            'int'           => Sanitizer::Number($value),
+            'money'         => Sanitizer::Money($value),
+            'string'        => Validate::Char($value, $options),  // Use self::Char
+            'textarea'      => Validate::TextArea($value, $options),
+            'text_editor'   => Sanitizer::TextEditor($value, $options),
+            'url'           => Sanitizer::Url($value),
+            'image'         => Sanitizer::Image($value),
+            'site'          => Sanitizer::Site($value),
+            default         => $value,
+        };
+    }
+    private static function validatePipe(string $key, mixed $value, string $pipe, string $defaultLabel, array $defaultOptions = []): mixed
+    {
+        $tokens = explode('|', $pipe);
+        $base = array_shift($tokens);
+        $label = $defaultLabel;
+        $options = $defaultOptions;
+
+        // Extract label and options if in tokens
+        $filteredTokens = [];
+        foreach ($tokens as $token) {
+            if (str_starts_with($token, 'label:')) {
+                $label = trim(substr($token, 6), "'\"");
+            } elseif (str_starts_with($token, 'options:')) {
+                $optsStr = substr($token, 8);
+                $optsPairs = explode(',', $optsStr);
+                foreach ($optsPairs as $pair) {
+                    [$optKey, $optVal] = array_pad(explode('=', trim($pair)), 2, null);
+                    if ($optKey === 'toLow') {
+                        $options['toLow'] = filter_var($optVal, FILTER_VALIDATE_BOOLEAN);
+                    } elseif ($optKey === 'arTfa') {
+                        $options['arTfa'] = filter_var($optVal, FILTER_VALIDATE_BOOLEAN);
+                    }
+                    // Only accept these two for security
+                }
+            } else {
+                $filteredTokens[] = $token;
+            }
+        }
+        $tokens = $filteredTokens;
+
+        /* ---------- First: Base type ---------- */
+        $value = self::validateClassic($key, $value, $base, $label, $options);
+
+        /* ---------- Then: Additional rules ---------- */
+        foreach ($tokens as $token) {
+            [$name, $arg] = array_pad(explode(':', $token, 2), 2, null);
+            switch ($name) {
+                case 'length':
+                    if (mb_strlen((string)$value) !== (int)$arg)
+                        die(self::SetError("طول «{$label}» باید دقیقاً {$arg} باشد."));
+                    break;
+                case 'minLength':
+                    if (mb_strlen((string)$value) < (int)$arg)
+                        die(self::SetError("طول «{$label}» حداقل {$arg} است."));
+                    break;
+                case 'maxLength':
+                    if (mb_strlen((string)$value) > (int)$arg)
+                        die(self::SetError("طول «{$label}» حداکثر {$arg} است."));
+                    break;
+                case 'min':
+                    if ((float)$value < (float)$arg)
+                        die(self::SetError("«{$label}» حداقل باید {$arg} باشد."));
+                    break;
+                case 'max':
+                    if ((float)$value > (float)$arg)
+                        die(self::SetError("«{$label}» حداکثر باید {$arg} باشد."));
+                    break;
+                case 'in':
+                    $optionsList = explode(',', $arg);
+                    if (!in_array($value, $optionsList, false))  // تغییر به false برای اجازه type conversion
+                        die(self::SetError("مقدار «{$label}» نامعتبر است."));
+                    break;
+                case 'empty':
+                    break;
+                default:
+                    die(self::SetError("قانون «{$name}» پشتیبانی نمی‌شود."));
+            }
+        }
+        return $value;
+    }
     public static function Paging($row, $page): array {
         $limit = Sanitizer::Number($row);
+        $page = Sanitizer::Number($page);
         $offset = (Sanitizer::Number($page) - 1) * $limit;
-        return [$limit, $offset];
+        return [$limit, $offset , $page];
     }
     public static function ChangeSpaceWithChar($value, $char = "-"): string {
         $value = Sanitizer::Char($value);
@@ -260,6 +394,62 @@ class Base
             return $json_return->status;
         }
     }
+    public static function SendSMSLookup($receptor, $token, $template = 'verify') {
+        $url = "https://api.kavenegar.com/v1/" . TOKEN_SMS_PANEL . "/verify/lookup.json";
+
+        $headers = array(
+            'Accept: application/json',
+            'Content-Type: application/x-www-form-urlencoded',
+            'charset: utf-8'
+        );
+
+        // اصلاح چک نامعتبر توکن: اطمینان حاصل کنید که توکن خالی نیست و دقیقاً 6 کاراکتر طول دارد
+        if (empty($token) || strlen($token) != 6) {
+            die(self::SetError("کد ارسال به خطا برخورده است."));
+        }
+
+        // ساخت پارامترهای کوئری برای درخواست GET
+        $fields = array(
+            'receptor' => $receptor,
+            'token' => $token,
+            'template' => $template
+        );
+        $query_string = http_build_query($fields, '', '&');
+
+        // اضافه کردن رشته کوئری به URL برای GET
+        $url .= '?' . $query_string;
+
+        $handle = curl_init();
+        curl_setopt($handle, CURLOPT_URL, $url);
+        curl_setopt($handle, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($handle, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($handle, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($handle, CURLOPT_SSL_VERIFYPEER, false);
+        // تنظیم به متد GET (پیش‌فرض، اما برای وضوح بدون POST)
+        curl_setopt($handle, CURLOPT_HTTPGET, true);
+
+        $response = curl_exec($handle);
+        $code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
+        $content_type = curl_getinfo($handle, CURLINFO_CONTENT_TYPE);
+        $curl_errno = curl_errno($handle);
+        $curl_error = curl_error($handle);
+        curl_close($handle); // تمرین خوب برای بستن هندل
+
+        if ($curl_errno) {
+            return "error";
+        }
+
+        $json_response = json_decode($response);
+        if ($code != 200 && is_null($json_response)) {
+            die(self::SetError("خطا در ارسال پیامک ورود" . "- ارور 2"));
+        } else {
+            $json_return = $json_response->return;
+            if ($json_return->status != 200) {
+                die(self::SetError("خطا در ارسال پیامک ورود" . "-ارور 3"));
+            }
+            return $json_return->status;
+        }
+    }
     public static function ValNotExistInDbReturn($table_name, $condition, array $params, $message = "این رکورد تکراری است و قبلا استفاده شده است.") {
         self::ValidateNumberLessZero(PD::SingleSelect($table_name, $condition, $params), $message);
         return $params[0];
@@ -306,11 +496,15 @@ class Sanitizer
     public static function Number($num): ?int {
         return (int)$num;
     }
-    public static function Char($value): ?string {
+    public static function Char($value,$options = []): ?string {
         if ($value === null) return null;
+
+        $toLow = $options['toLow'] ?? true;
+        $arTfa = $options['arTfa'] ?? true;
+
         $value = trim($value);
-        $value = strtolower($value);
-        $value = TextHelper::textArToFa($value);
+        if($toLow) $value = strtolower($value);
+        if($arTfa) $value = TextHelper::textArToFa($value);
         $value = TextHelper::numFaToEn($value);
         $value = self::PreventDefault($value);
         $value = self::ClearChar($value);
@@ -380,10 +574,19 @@ class Sanitizer
         }
         return htmlspecialchars($value, ENT_QUOTES, 'UTF-8', false);
     }
-    public static function TextArea($value): ?string {
+    public static function Money($num): ?int {
+        $num = str_replace(",", "", $num);
+        return (int)$num;
+    }
+    public static function TextArea($value ,$options = []): ?string {
         if ($value === null) return null;
+
+        $toLow = $options['toLow'] ?? true;
+        $arTfa = $options['arTfa'] ?? true;
+
         $value = trim($value);
-        $value = TextHelper::textArToFa($value);
+        if($toLow) $value = strtolower($value);
+        if($arTfa) $value = TextHelper::textArToFa($value);
         $value = TextHelper::numFaToEn($value);
         $value = str_replace("= ?", "", $value);
         $value = str_replace("script>", "", $value);
@@ -395,10 +598,13 @@ class Sanitizer
         }
         return htmlspecialchars($value, ENT_QUOTES, 'UTF-8', false);
     }
-    public static function TextEditor($value): ?string {
+    public static function TextEditor($value ,$options = [] ): ?string {
         $value = trim($value);
-        $value = strtolower($value);
-        $value = TextHelper::textArToFa($value);
+        $toLow = $options['toLow'] ?? true;
+        $arTfa = $options['arTfa'] ?? true;
+
+        if($toLow) $value = strtolower($value);
+        if($arTfa) $value = TextHelper::textArToFa($value);
         $value = TextHelper::numFaToEn($value);
         $value = str_replace("= ?", "", $value);
         $value = str_replace("script>", "", $value);
@@ -629,15 +835,15 @@ class PD
 
 class Validate
 {
-    public static function Char($string,$length = 255): ?string {
-        $string = Sanitizer::Char($string);
+    public static function Char($string,$options = [],$length = 255): ?string {
+        $string = Sanitizer::Char($string,$options);
         if (strlen($string) > $length) {
             die(Base::SetError("تعداد کارکتر نباید برای این داده از 255 بیشتر باشد."));
         }
         return $string;
     }
-    public static function TextArea($textArea,$length = 10000): ?string {
-        $textArea = Sanitizer::TextArea($textArea);
+    public static function TextArea($textArea,$options = [],$length = 10000): ?string {
+        $textArea = Sanitizer::TextArea($textArea,$options);
         if (strlen($textArea) > $length) {
             die(Base::SetError("تعداد کارکتر نباید برای این داده از 10000 بیشتر باشد."));
         }
