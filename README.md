@@ -3,10 +3,13 @@
 
 This project is a full-featured backend built with PHP, utilizing a MySQL database and PDO for secure database interactions.
 
+### Updates 1.2.6:
+- **Update `Sanitizer::Url`**.
+- **Add  `Validate::Url`**.
+
 ### Updates 1.2.5:
 - **Update `Base::Isset`**.
 - **Add  `Validate::Money`**.
-
 
 ### Updates 1.2.4:
 - **Add And Update `PD::Transaction`**.
@@ -24,13 +27,11 @@ This project is a full-featured backend built with PHP, utilizing a MySQL databa
 - **Updated the `configs-example` file**.
 - **Fixed issue with token** in `$GLOBALS['token_contents']` and corrected it to `$GLOBALS[TOKEN_NAME]`.
 
-
 ## Updates 1.2.2
 - **Fixed path error when function is missing**
 - Add **Transaction**
 - Add in class Base **IssetCustom**
 - Add in class Base::IssetCustom **type money**
-
 
 ## Updates 1.2.1
 - **Fixed path error when function is missing**
@@ -40,7 +41,6 @@ This project is a full-featured backend built with PHP, utilizing a MySQL databa
 - Added **Base::SetData**
 - Renamed **ReturnError** to **SetError**
 - add Support **UUID**
-
 
 ## Prerequisites
 

@@ -522,6 +522,7 @@ class Sanitizer
         $value = self::PreventDefault($value);
         $value = self::ClearAllSpecialChar($value);
         $value = preg_replace('/\s+/', "-", $value);
+        $value = str_replace("?","",$value);
         $value = trim($value,"-");
         if (function_exists("addslashes")) {
             $value = addslashes($value);
@@ -848,6 +849,11 @@ class Validate
             die(Base::SetError("تعداد کارکتر نباید برای این داده از 10000 بیشتر باشد."));
         }
         return $textArea;
+    }
+    public static function Url($url): ?string {
+        if (empty($url)) die(Base::SetError("آدرس url نمیتواند خالی باشد."));
+        if (!preg_match('/^[a-z0-9-]+$/', $url)) die(Base::SetError("ساختار وارد شده برای آدرس صحیح نیست."));
+        return $url;
     }
     public static function Number($number,$greater_zero = true): ?string {
         $number = Sanitizer::Number($number);
