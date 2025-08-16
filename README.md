@@ -3,6 +3,9 @@
 
 This project is a full-featured backend built with PHP, utilizing a MySQL database and PDO for secure database interactions.
 
+### Updates 1.2.7:
+- **Remove extra functions**.
+
 ### Updates 1.2.6:
 - **Update `Sanitizer::Url`**.
 - **Add  `Validate::Url`**.

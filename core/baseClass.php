@@ -342,18 +342,6 @@ class Base
         $value = htmlspecialchars($value);
         return htmlentities($value);
     }
-    public static function ValidateNumberLessZero($num, $message = "خطا در عملیات"): ?int {
-        if (Sanitizer::Number($num) > 0) {
-            die(self::SetError($message));
-        }
-        return Sanitizer::Number($num);
-    }
-    public static function ValidateNumberGreaterZero($num, $message = "خطا در عملیات"): ?int {
-        if (Sanitizer::Number($num) < 1) {
-            die(self::SetError($message));
-        }
-        return Sanitizer::Number($num);
-    }
     public static function SendSMS($data = null) {
         $url = "https://api.kavenegar.com/v1/".TOKEN_SMS_PANEL."/sms/send.json";
 
@@ -449,14 +437,6 @@ class Base
             }
             return $json_return->status;
         }
-    }
-    public static function ValNotExistInDbReturn($table_name, $condition, array $params, $message = "این رکورد تکراری است و قبلا استفاده شده است.") {
-        self::ValidateNumberLessZero(PD::SingleSelect($table_name, $condition, $params), $message);
-        return $params[0];
-    }
-    public static function ValExistInDbReturn($table_name, $condition, array $params, $message = "چنین رکوردی وجود ندارد.") {
-        self::ValidateNumberGreaterZero(PD::SingleSelect($table_name, $condition, $params), $message);
-        return $params[0];
     }
     public static function DuplicateValue(array $Duplicate_List, string $Table_Name, string $Condition): bool|int {
         if (!empty($Duplicate_List)) {
