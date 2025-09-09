@@ -3,6 +3,9 @@
 
 This project is a full-featured backend built with PHP, utilizing a MySQL database and PDO for secure database interactions.
 
+### Updates 1.2.8:
+- **Fix the issue of a trailing comma in the input JSON parameter**.
+
 ### Updates 1.2.7:
 - **Remove extra functions**.
 

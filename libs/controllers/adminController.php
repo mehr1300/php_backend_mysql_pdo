@@ -40,6 +40,21 @@ class AdminController {
         ));
     }
 
+    public static function list(): bool|string
+    {
+        $input = Base::Isset([
+           "title" => "string|label:'نام '|options:toLow=false",
+           "condition" => "textarea|options:toLow=false",
+           "brand_authenticity" => "text_editor|options:toLow=false",
+        ]);
+
+        PD::Insert("tbl_data", $input);
+
+        return json_encode(array(
+            "result" => $input,
+            "message" => "خروج از حساب کاربری با موفقیت انجام شد."
+        ));
+    }
 
 
 }

@@ -57,18 +57,20 @@ class Base
         // مدیریت application/json
         if (stripos($contentType, 'application/json') !== false) {
             $input = file_get_contents('php://input');
+            // پیش‌پردازش برای حذف trailing commas
+            $input = preg_replace('/,\s*([}\]])/m', '$1', $input);
             $jsonData = json_decode($input, true);
             if (is_array($jsonData)) {
                 $data = $jsonData;
             }
         }
-        // مدیریت multipart/form-data یا فرم‌های دیگر
+
         else {
             if (in_array($method, ['POST', 'PUT'])) {
-                // استفاده از $_POST برای POST معمولی
+
                 $data = $_POST;
 
-                // اگر $_POST خالی بود و درخواست multipart/form-data بود
+
                 if (empty($data) && stripos($contentType, 'multipart/form-data') !== false) {
                     $input = file_get_contents('php://input');
                     if ($input) {
@@ -79,24 +81,20 @@ class Base
                         }
                         $boundary = $matches[1];
 
-                        // جدا کردن بخش‌ها با boundary
                         $parts = explode("--" . $boundary, $input);
                         foreach ($parts as $part) {
                             $part = trim($part);
                             if (empty($part) || $part === '--') continue;
 
-                            // جدا کردن هدر و بدنه
                             $headerEnd = strpos($part, "\r\n\r\n");
                             if ($headerEnd === false) continue;
 
                             $headers = substr($part, 0, $headerEnd);
                             $body = trim(substr($part, $headerEnd + 4));
 
-                            // استخراج نام فیلد
                             if (preg_match('/name="([^"]+)"/', $headers, $match)) {
                                 $key = $match[1];
                                 if (preg_match('/filename="([^"]+)"/', $headers, $fileMatch)) {
-                                    // مدیریت فایل
                                     $data[$key] = [
                                         'name' => $fileMatch[1],
                                         'content' => $body
@@ -115,7 +113,6 @@ class Base
             $data = array_merge($data, $_REQUEST);
         }
 
-        // مدیریت فایل‌ها از $_FILES (برای POST معمولی)
         if (!empty($_FILES)) {
             foreach ($_FILES as $fileKey => $fileInfo) {
                 if (is_array($fileInfo['name'])) {
