@@ -809,6 +809,82 @@ class PD
             ]
         );
     }
+
+    /**
+     * @param string $procedure_name نام پروسیجر
+     * @param array $in_params ['num1' => 1, 'num2' => 2]
+     * @param array $out_params ['n' => null]
+     * @return array|bool آرایه خروجی‌ها
+     */
+    public static function CallProcedure(string $procedure_name, array $in_params = [], array $out_params = []): array|bool {
+        $db = self::getConnection();
+        try {
+            if (empty($out_params)) {
+                $out_params = self::getOutParameters($procedure_name);
+                if ($out_params === false) {
+                    die(Base::SetError("خطا در تشخیص خروجی."));
+                }
+            }
+
+            $out_results = [];
+            foreach ($out_params as $name => $default) {
+                $var_name = "@{$name}";
+                $init_value = ($default !== null) ? $default : 'NULL';
+                $db->exec("SET {$var_name} = {$init_value}");
+            }
+
+            $in_count = count($in_params);
+            $placeholders = $in_count > 0 ? implode(',', array_fill(0, $in_count, '?')) : '';
+
+            $call_params = [];
+            if ($in_count > 0) {
+                $call_params[] = $placeholders;
+            }
+            foreach ($out_params as $name => $default) {
+                $call_params[] = "@{$name}";
+            }
+            $query = "CALL {$procedure_name}(" . (empty($call_params) ? '' : implode(', ', $call_params)) . ")";
+
+            $stmt = $db->prepare($query);
+            $stmt->execute(array_values($in_params));
+
+            foreach ($out_params as $name => $default) {
+                $var_name = "@{$name}";
+                $stmt_out = $db->prepare("SELECT {$var_name} AS `{$name}`");
+                $stmt_out->execute();
+                $result = $stmt_out->fetch(PDO::FETCH_ASSOC);
+                $out_results[$name] = $result ? $result[$name] : null;
+            }
+
+            return $out_results;
+        } catch (\Exception $e) {
+            die(Base::SetError("خطا در فراخوانی پروسیجر {$procedure_name}: " . $e->getMessage()));
+        }
+    }
+
+    /**
+     * @param string $procedure_name نام پروسیجر
+     * @return array|bool ['param_name' => null]| false
+     */
+    private static function getOutParameters(string $procedure_name): array|bool {
+        $db = self::getConnection();
+        try {
+            $stmt = $db->prepare("SHOW CREATE PROCEDURE `{$procedure_name}`");
+            $stmt->execute();
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$row) return [];
+
+            $create_sql = $row['Create Procedure'];
+            preg_match_all('/\bOUT\b\s+`?([a-zA-Z0-9_]+)`?/', $create_sql, $matches);
+            $out_params = [];
+            foreach ($matches[1] as $name) {
+                $out_params[$name] = null;
+            }
+            return $out_params ?: [];
+        } catch (\Exception $e) {
+            die(Base::SetError("خطا در parse SHOW CREATE: " . $e->getMessage()));
+        }
+    }
 }
 
 class Validate
