@@ -848,15 +848,33 @@ class PD
             $stmt = $db->prepare($query);
             $stmt->execute(array_values($in_params));
 
+            $result_sets = [];
+            do {
+                try {
+                    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    if (!empty($rows)) {
+                        $result_sets[] = $rows;
+                    }
+                } catch (\Exception $e) {
+                    break;
+                }
+            } while ($stmt->nextRowset());
+
+            $stmt->closeCursor();
+
             foreach ($out_params as $name => $default) {
                 $var_name = "@{$name}";
                 $stmt_out = $db->prepare("SELECT {$var_name} AS `{$name}`");
                 $stmt_out->execute();
                 $result = $stmt_out->fetch(PDO::FETCH_ASSOC);
                 $out_results[$name] = $result ? $result[$name] : null;
+                $stmt_out->closeCursor();
             }
 
-            return $out_results;
+            return [
+                'out' => $out_results,
+                'sets' => $result_sets
+            ];
         } catch (\Exception $e) {
             die(Base::SetError("خطا در فراخوانی پروسیجر {$procedure_name}: " . $e->getMessage()));
         }
@@ -872,6 +890,7 @@ class PD
             $stmt = $db->prepare("SHOW CREATE PROCEDURE `{$procedure_name}`");
             $stmt->execute();
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt->closeCursor();
             if (!$row) return [];
 
             $create_sql = $row['Create Procedure'];
